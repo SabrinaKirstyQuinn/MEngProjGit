@@ -33,6 +33,7 @@ bestFitness = 12;
 fittnessPoint = 0;
 
 
+
 %Run through generations until target solution is found or a certain number
 %of generations have been executed
 while (bestFitness ~= TARGET_FITNESS)&&(currentGeneration <= generations)
@@ -40,6 +41,10 @@ totalFitness=0;
 averageFitness=0;
 largestFitness=0;
 prevFittness = 0;
+
+%Generation count
+currentGeneration = currentGeneration +1 ;
+sprintf('Generation: %d', currentGeneration)
 
 % Calculating fitness
     %Stepping through each chrosome in the poulation
@@ -118,9 +123,13 @@ prevFittness = 0;
     end
     
 % Crossover  
-    intermediatePopSize = 1;
-    while(intermediatePopSize <= popSize)
-        %create random locus within range
+    crossoverNum = popSize/numParents
+    remainder = mod(popSize,numParents)
+    intermediatePositionEnd = 0;
+    intermediatePositionStart = 1;
+    
+    for c = 1:crossoverNum
+        %Create random locus within range
         randLocusPoint = round(rand*(chromsomeSize-2)) +1;
         %For however many number of parents we are using, cycle through
         for n = 1:numParents 
@@ -133,29 +142,21 @@ prevFittness = 0;
             offspring(1:randLocusPoint,n) = selectedGenes(1:randLocusPoint,n);
             offspring(randLocusPoint+1:chromsomeSize,n) = selectedGenes(randLocusPoint+1:chromsomeSize,mate);
         end
-        currentPopPlacement = intermediatePopSize
-        numberRequired = numParents-1
-        populationNotFull = true
-        while (populationNotFull)
-            intermediatePopSize = intermediatePopSize + numberRequired
-            if intermediatePopSize > popSize
-                intermediatePopSize = intermediatePopSize - numberRequired
-                numberRequired = numberRequired -1
-                intermediatePopSize = intermediatePopSize + numberRequired
-            elseif intermediatePopSize <= popSize
-                populationNotFull = false
-            end
-        end
-        intermediatePop(1:chromsomeSize,currentPopPlacement : intermediatePopSize) = offspring(1:chromsomeSize,1:numberRequired);
-        intermediatePop
-    end   
-
-% Mutation 
-    
-    for n = 1:numMutations
-        bitFlip(n,1) = round(rand*(chromsomeSize-1)) +1
-        
+        offspring
+        %Storing offspring in intermediate population
+        intermediatePositionStart
+        intermediatePositionEnd = intermediatePositionEnd + numParents
+        intermediatePop(:, intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents)
+        intermediatePositionStart = intermediatePositionStart + numParents
     end
+     
+
+% % Mutation 
+%     
+%     for n = 1:numMutations
+%         bitFlip(n,1) = round(rand*(chromsomeSize-1)) +1
+%         
+%     end
     
     %check
 %     population    
@@ -166,8 +167,7 @@ prevFittness = 0;
 %     offspring
 
     
-    currentGeneration = currentGeneration +1 ;
-    sprintf('Generation: %d', currentGeneration)
+
 
 end
 
