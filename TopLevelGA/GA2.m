@@ -127,6 +127,7 @@ sprintf('Generation: %d', currentGeneration)
     remainder = mod(popSize,numParents)
     intermediatePositionEnd = 0;
     intermediatePositionStart = 1;
+    offspringSize = 0; 
     
     for c = 1:crossoverNum
         %Create random locus within range
@@ -141,22 +142,25 @@ sprintf('Generation: %d', currentGeneration)
             end
             offspring(1:randLocusPoint,n) = selectedGenes(1:randLocusPoint,n);
             offspring(randLocusPoint+1:chromsomeSize,n) = selectedGenes(randLocusPoint+1:chromsomeSize,mate);
-        end
-        offspring
-        %Storing offspring in intermediate population
-        intermediatePositionStart
-        intermediatePositionEnd = intermediatePositionEnd + numParents
-        intermediatePop(:, intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents)
-        intermediatePositionStart = intermediatePositionStart + numParents
+            offspringSize = offspringSize +1;
+        end      
+        %Storing offspring in intermediate population       
+        intermediatePositionEnd = intermediatePositionEnd + numParents;
+        intermediatePop(:, intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents);
+        intermediatePositionStart = intermediatePositionStart + numParents;
     end
      
 
-% % Mutation 
-%     
-%     for n = 1:numMutations
-%         bitFlip(n,1) = round(rand*(chromsomeSize-1)) +1
-%         
-%     end
+% Mutation 
+    for p = 1:offspringSize
+        for n = 1:numMutations
+            bitFlip = round(rand*(chromsomeSize-1)) +1
+            alleleToFlip = intermediatePop(bitFlip,p)
+            alleleFlipped = ~alleleToFlip
+            intermediatePop(bitFlip,p) = alleleFlipped
+        end
+        
+    end 
     
     %check
 %     population    
