@@ -28,15 +28,14 @@ population
 %% LOOP THROUGH GENERATIONS 
 
 currentGeneration = 1;
-TARGET_FITNESS = 0;
-bestFitness = 12;
 fittnessPoint = 0;
 
 %Run through generations until target solution is found or a certain number
 %of generations have been executed
-while (bestFitness ~= TARGET_FITNESS)&&(currentGeneration <= generations)
+while (currentGeneration <= generations)
 totalFitness=0;
 largestFitness =0
+PrevFittness = 0
 
 sprintf('Generation: %d', currentGeneration)
 
@@ -61,29 +60,22 @@ sprintf('Generation: %d', currentGeneration)
             %avoid a zero fitness value, to ensure all chromosomes are
             %given a probability in the roulette wheel
             fitnessSum = fitnessSum + fittnessPoint;
-
-        end
-        
+        end        
         %Offset needed for roulette wheel 
-        fitnessSum = fitnessSum + 1
-        
-        %Fittest individual
-        if (n) ~= (1)
-            prevIndividual = n - 1
-            accessfitnessValues = chromsomeSize+1;
-            PrevFittness = population(accessfitnessValues,prevIndividual)
-            if (fitnessSum) >= (PrevFittness)
-                largestFitness= fitnessSum
-            end
-        end   
-        totalFitness = totalFitness + fitnessSum
-        
+        fitnessSum = fitnessSum + 1;       
         %Saving fitness value 
-        population(chromsomeSize+1,n) = fitnessSum
-          
+        population(chromsomeSize+1,n) = fitnessSum        
+        %Fittest individual - max value       
+        accessfitnessValues = chromsomeSize+1;
+        largestFitness = max(population(accessfitnessValues,:));  
+        %Minimum fitness
+        minFitness  = min(population(accessfitnessValues,:));
+        %Calculating total fitness of the population
+        totalFitness = totalFitness + fitnessSum;          
     end
-     averageFitness(currentGeneration) = totalFitness/popSize 
-     largestFitnessGenerational(currentGeneration) = largestFitness 
+    averageFitness(currentGeneration) = totalFitness/popSize;
+    largestFitnessGenerational(currentGeneration) = largestFitness;
+    minFitnessGenerational(currentGeneration)= minFitness;
      
 
     
@@ -162,24 +154,16 @@ sprintf('Generation: %d', currentGeneration)
             intermediatePop(bitFlip,p) = alleleFlipped;
         end       
     end 
-%     
-    %check
-%     population    
-%     totalFitness
-%     parentsSelectedIndexNumbers
-%     randLocusPoint
-%     selectedGenes
-%     offspring
-
+   %Cull old population and all offspring is used as the new population
    population = intermediatePop
    %Generation count
    currentGeneration = currentGeneration +1 ;
 
 end
 
+%% Plot information 
 figure
 p1 = plot(1:generations,averageFitness(1:generations), '-o');
-
 titleString = sprintf('GA2: EA Generations Vs Average Fitness of Population, (Population size = %d, Generations = %d, Chromosome size = %d, No. of parents = %d, No. of mutations = %d)' ,popSize, generations, chromsomeSize, numParents, numMutations');
 title(titleString);
 hold on ;
@@ -187,7 +171,8 @@ ylabel('Average Fitness of Population');
 xlabel('EA Generation');
 grid on
 p2 = plot(1:generations,largestFitnessGenerational(1:generations), '-ogr');
-lgd = legend([p1 p2],'Average Fitness of population','Largest Fitness of population','Location','northoutside');
+p3 = plot(1:generations,minFitnessGenerational(1:generations), '-om');
+lgd = legend([p1 p2 p3],'Average Fitness of population','Largest Fitness of population','Largest Fitness of population','Location','northoutside');
 title(lgd,'Key:')
 
 
