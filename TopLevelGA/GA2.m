@@ -6,6 +6,11 @@ end
 if numMutations > chromsomeSize
     error('number of mutations in chromosome is to big compared to the chromosomeSize') 
 end
+if generations == 0
+    genFlag = 0;
+else
+    genFlag = 1;
+end
 
 %% CREATE TARGET SOLUTION = (Bit string full of ones)
 solutionTarget = ones(chromsomeSize,1)
@@ -26,18 +31,27 @@ end
 population
 
 %% LOOP THROUGH GENERATIONS 
-
-currentGeneration = 1;
+runSimulation = 1
+currentGeneration = 0;
 fittnessPoint = 0;
+desiredFitness = chromsomeSize+1;
 
 %Run through generations until target solution is found or a certain number
 %of generations have been executed
-while (currentGeneration <= generations)
-totalFitness=0;
-largestFitness =0
-PrevFittness = 0
+while (runSimulation)
+    tic
+    timerValue = tic;
+        toc
+    elapsedTime = toc
+    toc(timerValue)
+    elapsedTime = toc(timerValue)
+    
+    totalFitness=0;
+    largestFitness =0;
 
-sprintf('Generation: %d', currentGeneration)
+%Generation count
+    currentGeneration = currentGeneration +1;
+    sprintf('Generation: %d', currentGeneration)
 
 % Calculating fitness
     %Stepping through each chrosome in the poulation
@@ -64,7 +78,7 @@ sprintf('Generation: %d', currentGeneration)
         %Offset needed for roulette wheel 
         fitnessSum = fitnessSum + 1;       
         %Saving fitness value 
-        population(chromsomeSize+1,n) = fitnessSum        
+        population(chromsomeSize+1,n) = fitnessSum;        
         %Fittest individual - max value       
         accessfitnessValues = chromsomeSize+1;
         largestFitness = max(population(accessfitnessValues,:));  
@@ -73,7 +87,7 @@ sprintf('Generation: %d', currentGeneration)
         %Calculating total fitness of the population
         totalFitness = totalFitness + fitnessSum;          
     end
-    averageFitness(currentGeneration) = totalFitness/popSize;
+    averageFitness(currentGeneration) = totalFitness/popSize
     largestFitnessGenerational(currentGeneration) = largestFitness;
     minFitnessGenerational(currentGeneration)= minFitness;
      
@@ -111,8 +125,7 @@ sprintf('Generation: %d', currentGeneration)
                     individual = popSize + 1;
                 end
             end
-            individual = individual + 1;
-             
+            individual = individual + 1;            
         end 
     end
     
@@ -122,10 +135,9 @@ sprintf('Generation: %d', currentGeneration)
     intermediatePositionEnd = 0;
     intermediatePositionStart = 1;
     offspringSize = 0; 
-    
     for c = 1:crossoverNum
         %Create random locus within range
-        randLocusPoint = round(rand*(chromsomeSize-2)) +1;
+        randLocusPoint = round(rand*(chromsomeSize-2)) +2;
         %For however many number of parents we are using, cycle through
         for n = 1:numParents 
             %ensure all genes used correctly
@@ -140,38 +152,48 @@ sprintf('Generation: %d', currentGeneration)
         end      
         %Storing offspring in intermediate population       
         intermediatePositionEnd = intermediatePositionEnd + numParents;
-        intermediatePop(:, intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents);
+        intermediatePop(:,intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents);
         intermediatePositionStart = intermediatePositionStart + numParents;
     end
      
 
 % Mutation 
-    for p = 1:offspringSize
-        for n = 1:numMutations
-            bitFlip = round(rand*(chromsomeSize-1)) +1;
-            alleleToFlip = intermediatePop(bitFlip,p);
-            alleleFlipped = ~alleleToFlip;
-            intermediatePop(bitFlip,p) = alleleFlipped;
-        end       
-    end 
-   %Cull old population and all offspring is used as the new population
+%     for p = 1:offspringSize
+%         for n = 1:numMutations
+%             bitFlip = round(rand*(chromsomeSize-1)) +1;
+%             alleleToFlip = intermediatePop(bitFlip,p);
+%             alleleFlipped = ~alleleToFlip;
+%             intermediatePop(bitFlip,p) = alleleFlipped;
+%         end       
+%     end 
+    
+%Cull old population and all offspring is used as the new population
    population = intermediatePop
-   %Generation count
-   currentGeneration = currentGeneration +1 ;
+  
+%Allow for the EA to only stop when it reaches desired fitness   
+   if ((genFlag == 1)&&(currentGeneration >= generations))||(desiredFitness == largestFitness)
+       runSimulation = 0;
+   end
+   
+
 
 end
 
+
+
 %% Plot information 
 figure
-p1 = plot(1:generations,averageFitness(1:generations), '-o');
-titleString = sprintf('GA2: EA Generations Vs Average Fitness of Population, (Population size = %d, Generations = %d, Chromosome size = %d, No. of parents = %d, No. of mutations = %d)' ,popSize, generations, chromsomeSize, numParents, numMutations');
+% xlim([1 currentGeneration]);
+% ylim([1 desiredFitness]);
+p1 = plot(1:currentGeneration,averageFitness(1:currentGeneration), '-o');
+titleString = sprintf('GA2: EA Generations Vs Average Fitness of Population, (Population size = %d, Generations = %d, Chromosome size = %d, No. of parents = %d, No. of mutations = %d, StopWatch = %d )' ,popSize, currentGeneration, chromsomeSize, numParents, numMutations, elapsedTime');
 title(titleString);
 hold on ;
 ylabel('Average Fitness of Population');
 xlabel('EA Generation');
 grid on
-p2 = plot(1:generations,largestFitnessGenerational(1:generations), '-ogr');
-p3 = plot(1:generations,minFitnessGenerational(1:generations), '-om');
+p2 = plot(1:currentGeneration,largestFitnessGenerational(1:currentGeneration), '-ogr');
+p3 = plot(1:currentGeneration,minFitnessGenerational(1:currentGeneration), '-om');
 lgd = legend([p1 p2 p3],'Average Fitness of population','Largest Fitness of population','Largest Fitness of population','Location','northoutside');
 title(lgd,'Key:')
 
