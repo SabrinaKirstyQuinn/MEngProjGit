@@ -1,4 +1,4 @@
-function [] = GA2(popSize, generations, chromsomeSize, numParents, numMutations)
+function [] = GA2(popSize, generations, chromsomeSize, numParents, numMutations,bestFitKeepNo)
 %% CHECK INPUTS AGAINST CONSTRAINTS MADE
 if popSize < numParents
     error('to many parents compared to population size')  
@@ -35,10 +35,11 @@ runSimulation = 1
 currentGeneration = 0;
 fittnessPoint = 0;
 desiredFitness = chromsomeSize+1;
+largestFitness = 0;
 
 %Run through generations until target solution is found or a certain number
 %of generations have been executed
-while (runSimulation)
+while (currentGeneration ~= generations)
     tic
     timerValue = tic;
         toc
@@ -48,6 +49,7 @@ while (runSimulation)
     
     totalFitness=0;
     largestFitness =0;
+    intermediatePop = zeros(chromsomeSize, popSize)
 
 %Generation count
     currentGeneration = currentGeneration +1;
@@ -87,26 +89,27 @@ while (runSimulation)
         %Calculating total fitness of the population
         totalFitness = totalFitness + fitnessSum;          
     end
-    averageFitness(currentGeneration) = totalFitness/popSize
+    averageFitness(currentGeneration) = totalFitness/popSize;
     largestFitnessGenerational(currentGeneration) = largestFitness;
     minFitnessGenerational(currentGeneration)= minFitness;
      
-
+population
     
 % Selection - Creating Roulette Wheel
     %Offset of 0.1 given to make it easier to define random number range
     prevNumRange =0.1;
     numberRange =0;
-    for n = 1:popSize        
-        selectProbability = 0;
+    for n = 1:popSize             
         %Calculating individuals probabilities of selection 
         selectProbability = population((chromsomeSize+1),n)/(totalFitness);
         %these popbabilities will always sum to a range of 0-1. 
         numberRange = prevNumRange + selectProbability;
-        population((chromsomeSize+1),n) = numberRange; 
+        population((chromsomeSize+2),n) = numberRange; 
         prevNumRange = numberRange;
     end 
    
+ population 
+ 
 % Selecting parents using roulette wheel
     currentIndividualRange =0;
     parentsSelectedIndexNumbers = zeros(numParents,1);
@@ -115,7 +118,7 @@ while (runSimulation)
         randomNumber = 0.1 + rand*(1.1-0.1);
         individual = 1;
         while (individual <= popSize)
-            currentIndividualRange = population((chromsomeSize+1),individual);
+            currentIndividualRange = population((chromsomeSize+2),individual);
             if (currentIndividualRange) > (randomNumber);
                 newParent = individual - 1 ;
                 if ~(ismember(parentsSelectedIndexNumbers, newParent))
@@ -128,6 +131,8 @@ while (runSimulation)
             individual = individual + 1;            
         end 
     end
+ 
+ population   
     
 % Crossover  
     crossoverNum = popSize/numParents;
@@ -135,40 +140,76 @@ while (runSimulation)
     intermediatePositionEnd = 0;
     intermediatePositionStart = 1;
     offspringSize = 0; 
+    crossingGenesNo = numParents
     for c = 1:crossoverNum
         %Create random locus within range
         randLocusPoint = round(rand*(chromsomeSize-2)) +2;
         %For however many number of parents we are using, cycle through
-        for n = 1:numParents 
+        for n = 1:crossingGenesNo 
             %ensure all genes used correctly
-            if n == numParents
+            if n == crossingGenesNo
                 mate = 1;
             else
                 mate = n +1;
             end
             offspring(1:randLocusPoint,n) = selectedGenes(1:randLocusPoint,n);
             offspring(randLocusPoint+1:chromsomeSize,n) = selectedGenes(randLocusPoint+1:chromsomeSize,mate);
-            offspringSize = offspringSize +1;
+            offspringSize = offspringSize +1
+            offspring
+            
         end      
         %Storing offspring in intermediate population       
-        intermediatePositionEnd = intermediatePositionEnd + numParents;
-        intermediatePop(:,intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents);
-        intermediatePositionStart = intermediatePositionStart + numParents;
+        intermediatePositionEnd = intermediatePositionEnd + numParents
+        %intermediatePop = [intermediatePop offspring]
+        intermediatePop(:,intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents)
+        intermediatePositionStart = intermediatePositionStart + numParents
+        mate=0;
     end
      
 
 % Mutation 
-%     for p = 1:offspringSize
-%         for n = 1:numMutations
-%             bitFlip = round(rand*(chromsomeSize-1)) +1;
-%             alleleToFlip = intermediatePop(bitFlip,p);
-%             alleleFlipped = ~alleleToFlip;
-%             intermediatePop(bitFlip,p) = alleleFlipped;
-%         end       
-%     end 
+    for p = 1:offspringSize
+        for n = 1:numMutations
+            bitFlip = round(rand*(chromsomeSize-1)) +1;
+            alleleToFlip = intermediatePop(bitFlip,p);
+            alleleFlipped = ~alleleToFlip;
+            intermediatePop(bitFlip,p) = alleleFlipped;
+        end       
+    end 
     
+    intermediatePop
 %Cull old population and all offspring is used as the new population
-   population = intermediatePop
+    
+    IndAmoutCarriedOn = 0;
+   
+    addIndToPop = bestFitKeepNo + remainder
+     
+        for n = 1:addIndToPop
+            sprintf('CCC')
+            addIndToPop
+            %Take out the fittest from the old population
+            [fitValueOldPop,bestValOldPopIndex] = max(population(chromsomeSize+1,:))
+            population(chromsomeSize+1,bestValOldPopIndex)=0
+            %Replace into the intermediate population 
+            if remainder == 0 
+                n
+                sprintf('AAAA')
+                remainder
+                intermediatePop(1:chromsomeSize,n)= population(1:chromsomeSize,bestValOldPopIndex)
+                IndAmoutCarriedOn = IndAmoutCarriedOn+1
+            elseif (remainder > 0) 
+                sprintf('BBBBB')
+                remainder
+                intermediatePop(1:chromsomeSize,popSize) = population(1:chromsomeSize,bestValOldPopIndex)
+                IndAmoutCarriedOn = IndAmoutCarriedOn+1
+                remainder = remainder -1
+                
+            end
+        end
+    population = intermediatePop
+    addIndToPop = 0
+    
+           
   
 %Allow for the EA to only stop when it reaches desired fitness   
    if ((genFlag == 1)&&(currentGeneration >= generations))||(desiredFitness == largestFitness)
@@ -178,8 +219,6 @@ while (runSimulation)
 
 
 end
-
-
 
 %% Plot information 
 figure
@@ -194,7 +233,7 @@ xlabel('EA Generation');
 grid on
 p2 = plot(1:currentGeneration,largestFitnessGenerational(1:currentGeneration), '-ogr');
 p3 = plot(1:currentGeneration,minFitnessGenerational(1:currentGeneration), '-om');
-lgd = legend([p1 p2 p3],'Average Fitness of population','Largest Fitness of population','Largest Fitness of population','Location','northoutside');
+lgd = legend([p1 p2 p3],'Average Fitness of population','Largest Fitness of population','Minimum Fitness of population','Location','northoutside');
 title(lgd,'Key:')
 
 
