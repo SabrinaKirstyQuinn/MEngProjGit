@@ -11,35 +11,99 @@ if generations == 0
 else
     genFlag = 1;
 end
+%% varibles used for mapping bits
+% number bits for integer part of number  
+numBitsConvertIntergerPart = 16;
+% number bits for decimal part of number
+numBitsConvertDecimalPart = 25;
+
+convertedBitNoSize = numBitsConvertIntergerPart + numBitsConvertDecimalPart
 
 %% CREATE TARGET SOLUTION = (Bit string full of ones)
-solutionTarget = ones(chromsomeSize,1)
+
+solutionTarget = zeros(chromsomeSize*convertedBitNoSize,1) %minimun
 
 %% GENERATE RANDOM POPULATION
  
 %Initialise population with all zeros just for debugging clarity for now 
-population = zeros(chromsomeSize +1,popSize);
- 
+%population = zeros(chromsomeSize*convertedBitNoSize +1,popSize);
+
+% for n = 1:popSize
+%    placement = 1;
+%    for c = 1:chromsomeSize
+%         %random number between 5 and -5
+%         randomNo= -5 + (5+5)*rand()
+%         %Stick initial rand interger into a input array 
+%         intInput(c,n) = randomNo
+%         %convert interger into bits
+%         q = quantizer([convertedBitNoSize,3]);
+%         convertedBitNo = num2bin(q,randomNo)
+%         convertedBitNo(isspace(convertedBitNo)) = ''
+%         testUsingSameFunctionToConvertBackToInitialInt = bin2num(q,convertedBitNo)
+%         
+%         % just for better thought process, invert
+%         convertedBitNo = convertedBitNo';
+%         for a = 1 : convertedBitNoSize;
+%             % Create random bit string
+%             str1 = str2num(convertedBitNo(a,1));
+%             population(placement,n) = str1;
+%             placement = placement + 1;
+%         end  
+%    end     
+% end    
+
 for n = 1:popSize
-     
-    % Create random bit string
-    population(:,n) = round(rand(chromsomeSize+1,1));
-     
+   placement = 1;
+   for c = 1:chromsomeSize
+        %random number between 5 and -5, float point number
+        randomNo= -5 + (5+5)*rand()
+        %Stick initial rand interger into a input array 
+        intInput(c,n) = randomNo
+        %convert interger into bits
+        d2b = fix(rem(randomNo*pow2(-(numBitsConvertIntergerPart-1):numBitsConvertDecimalPart),2))
+        % the inverse transformation -testing
+        %b2d = d2b*pow2(numBitsConvertIntergerPart-1:-1:-numBitsConvertDecimalPart).'
+
+        convertedBitNo = d2b';
+        for a = 1 : convertedBitNoSize;
+            % Create random bit string
+            population(placement,n) = convertedBitNo(a,1);
+            placement = placement + 1;
+        end  
+   end     
 end    
- 
+
+% startPlacement = 1;
+% for n = 1:popSize
+%     for c = 1:chromsomeSize
+%         endPlacement = startPlacement + convertedBitNoSize;
+%         it = population(startPlacement:endPlacement,n);
+%         it = it';
+%         itt = num2str(it)
+%         
+%         itt(isspace(itt)) = ''
+%        
+%         interger = bin2num(q,itt)
+%         startPlacement = c+convertedBitNoSize;
+%     end 
+% end
+
+
+  intInput;
+  bitPopSize = size(population)
 % print population for debuggin purposes
-population
+
 
 %% LOOP THROUGH GENERATIONS 
 runSimulation = 1
 currentGeneration = 0;
 fittnessPoint = 0;
-desiredFitness = chromsomeSize+1;
-largestFitness = 0;
+desiredFitness = bitPopSize(1,1)+1;
 
 %Run through generations until target solution is found or a certain number
 %of generations have been executed
-while (currentGeneration ~= generations)
+while (runSimulation)
+    %timer
     tic
     timerValue = tic;
         toc
@@ -49,26 +113,29 @@ while (currentGeneration ~= generations)
     
     totalFitness=0;
     largestFitness =0;
-    intermediatePop = zeros(chromsomeSize, popSize)
+    intermediatePop = zeros(bitPopSize(1,1), popSize);
 
 %Generation count
     currentGeneration = currentGeneration +1;
     sprintf('Generation: %d', currentGeneration)
 
+    population
+    
+
 % Calculating fitness
-    %Stepping through each chrosome in the poulation
+    %Stepping through each chromosome in the poulation
     for n = 1:popSize
         fitnessSum = 0;
         allelePop = 0;
         alleleTarget = 0;
         %Stepping through each allele
-        for a = 1:chromsomeSize
+        for a = 1:bitPopSize(1,1);
             allelePop = population(a,n);
             alleleTarget = solutionTarget(a,1);
             %Comparing to target solution 
             switch allelePop
                 case alleleTarget
-                    fittnessPoint = 1; 
+                    fittnessPoint = 1;
                 case ~alleleTarget
                     fittnessPoint = 0;
             end
@@ -80,10 +147,11 @@ while (currentGeneration ~= generations)
         %Offset needed for roulette wheel 
         fitnessSum = fitnessSum + 1;       
         %Saving fitness value 
-        population(chromsomeSize+1,n) = fitnessSum;        
+        indSize = bitPopSize(1,1);
+        population(indSize+1,n) = fitnessSum;
         %Fittest individual - max value       
-        accessfitnessValues = chromsomeSize+1;
-        largestFitness = max(population(accessfitnessValues,:));  
+        accessfitnessValues = bitPopSize(1,1)+1;
+        largestFitness = max(population(accessfitnessValues,:));
         %Minimum fitness
         minFitness  = min(population(accessfitnessValues,:));
         %Calculating total fitness of the population
@@ -92,24 +160,20 @@ while (currentGeneration ~= generations)
     averageFitness(currentGeneration) = totalFitness/popSize;
     largestFitnessGenerational(currentGeneration) = largestFitness;
     minFitnessGenerational(currentGeneration)= minFitness;
-     
-population
-    
+         
 % Selection - Creating Roulette Wheel
     %Offset of 0.1 given to make it easier to define random number range
     prevNumRange =0.1;
     numberRange =0;
     for n = 1:popSize             
         %Calculating individuals probabilities of selection 
-        selectProbability = population((chromsomeSize+1),n)/(totalFitness);
+        selectProbability = population((bitPopSize(1,1)+1),n)/(totalFitness);
         %these popbabilities will always sum to a range of 0-1. 
         numberRange = prevNumRange + selectProbability;
-        population((chromsomeSize+2),n) = numberRange; 
+        population((bitPopSize(1,1)+2),n) = numberRange; 
         prevNumRange = numberRange;
     end 
    
- population 
- 
 % Selecting parents using roulette wheel
     currentIndividualRange =0;
     parentsSelectedIndexNumbers = zeros(numParents,1);
@@ -118,32 +182,30 @@ population
         randomNumber = 0.1 + rand*(1.1-0.1);
         individual = 1;
         while (individual <= popSize)
-            currentIndividualRange = population((chromsomeSize+2),individual);
+            currentIndividualRange = population((bitPopSize(1,1)+2),individual);
             if (currentIndividualRange) > (randomNumber);
                 newParent = individual - 1 ;
                 if ~(ismember(parentsSelectedIndexNumbers, newParent))
                     parentsSelectedIndexNumbers(n,1) = newParent;
                     %Get the selected parents genes and put them in array
-                    selectedGenes(1:chromsomeSize,n) = population(1:chromsomeSize,parentsSelectedIndexNumbers(n,1));
+                    selectedGenes(1:bitPopSize(1,1),n) = population(1:bitPopSize(1,1),parentsSelectedIndexNumbers(n,1));
                     individual = popSize + 1;
                 end
             end
             individual = individual + 1;            
         end 
     end
- 
- population   
-    
+
 % Crossover  
     crossoverNum = popSize/numParents;
     remainder = mod(popSize,numParents);
     intermediatePositionEnd = 0;
     intermediatePositionStart = 1;
     offspringSize = 0; 
-    crossingGenesNo = numParents
+    crossingGenesNo = numParents;
     for c = 1:crossoverNum
         %Create random locus within range
-        randLocusPoint = round(rand*(chromsomeSize-2)) +2;
+        randLocusPoint = round(rand*(bitPopSize(1,1)-2)) +2;
         %For however many number of parents we are using, cycle through
         for n = 1:crossingGenesNo 
             %ensure all genes used correctly
@@ -153,16 +215,16 @@ population
                 mate = n +1;
             end
             offspring(1:randLocusPoint,n) = selectedGenes(1:randLocusPoint,n);
-            offspring(randLocusPoint+1:chromsomeSize,n) = selectedGenes(randLocusPoint+1:chromsomeSize,mate);
-            offspringSize = offspringSize +1
-            offspring
+            offspring(randLocusPoint+1:bitPopSize(1,1),n) = selectedGenes(randLocusPoint+1:bitPopSize(1,1),mate);
+            offspringSize = offspringSize +1;
+           
             
         end      
         %Storing offspring in intermediate population       
-        intermediatePositionEnd = intermediatePositionEnd + numParents
+        intermediatePositionEnd = intermediatePositionEnd + numParents;
         %intermediatePop = [intermediatePop offspring]
-        intermediatePop(:,intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents)
-        intermediatePositionStart = intermediatePositionStart + numParents
+        intermediatePop(:,intermediatePositionStart:intermediatePositionEnd) = offspring(:,1:numParents);
+        intermediatePositionStart = intermediatePositionStart + numParents;
         mate=0;
     end
      
@@ -170,53 +232,54 @@ population
 % Mutation 
     for p = 1:offspringSize
         for n = 1:numMutations
-            bitFlip = round(rand*(chromsomeSize-1)) +1;
+            bitFlip = round(rand*(bitPopSize(1,1)-1)) +1;
             alleleToFlip = intermediatePop(bitFlip,p);
             alleleFlipped = ~alleleToFlip;
             intermediatePop(bitFlip,p) = alleleFlipped;
         end       
     end 
     
-    intermediatePop
-%Cull old population and all offspring is used as the new population
-    
+%new population
     IndAmoutCarriedOn = 0;
-   
-    addIndToPop = bestFitKeepNo + remainder
+    addIndToPop = bestFitKeepNo + remainder;
      
         for n = 1:addIndToPop
-            sprintf('CCC')
-            addIndToPop
             %Take out the fittest from the old population
-            [fitValueOldPop,bestValOldPopIndex] = max(population(chromsomeSize+1,:))
-            population(chromsomeSize+1,bestValOldPopIndex)=0
+            [fitValueOldPop,bestValOldPopIndex] = max(population(bitPopSize(1,1)+1,:));
+            population(bitPopSize(1,1)+1,bestValOldPopIndex)=0;
             %Replace into the intermediate population 
             if remainder == 0 
-                n
-                sprintf('AAAA')
-                remainder
-                intermediatePop(1:chromsomeSize,n)= population(1:chromsomeSize,bestValOldPopIndex)
-                IndAmoutCarriedOn = IndAmoutCarriedOn+1
+                intermediatePop(1:bitPopSize(1,1),n)= population(1:bitPopSize(1,1),bestValOldPopIndex);
+                IndAmoutCarriedOn = IndAmoutCarriedOn+1;
             elseif (remainder > 0) 
-                sprintf('BBBBB')
-                remainder
-                intermediatePop(1:chromsomeSize,popSize) = population(1:chromsomeSize,bestValOldPopIndex)
-                IndAmoutCarriedOn = IndAmoutCarriedOn+1
-                remainder = remainder -1
+                intermediatePop(1:bitPopSize(1,1),popSize) = population(1:bitPopSize(1,1),bestValOldPopIndex);
+                IndAmoutCarriedOn = IndAmoutCarriedOn+1;
+                remainder = remainder -1;
                 
             end
         end
-    population = intermediatePop
-    addIndToPop = 0
+        
+% Convert bits back to intergers        
+startPlacement = 1
+for n = 1:popSize 
+   for c = 1:chromsomeSize      
+       endPlacement = startPlacement + convertedBitNoSize -1
+       it = population(startPlacement:endPlacement,n)
+       it = it'
+       startPlacement = c+convertedBitNoSize       
+        % the inverse transformation
+        intergerOutput(c,n) = it*pow2(numBitsConvertIntergerPart-1:-1:-numBitsConvertDecimalPart).'        
+   end
+end        
+
+        
+    population = intermediatePop;    
     
-           
-  
+            
 %Allow for the EA to only stop when it reaches desired fitness   
    if ((genFlag == 1)&&(currentGeneration >= generations))||(desiredFitness == largestFitness)
        runSimulation = 0;
    end
-   
-
 
 end
 
